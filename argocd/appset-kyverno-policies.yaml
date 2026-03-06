@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kyverno-policies
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: <REPO_URL>        # e.g. https://github.com/matankriel/sks.git
+      revision: HEAD
+      directories:
+      - path: sites/*/*            # matches sites/<site>/<cluster>
+  template:
+    metadata:
+      name: "kyverno-policies-{{path[1]}}-{{path.basename}}"
+    spec:
+      project: default
+      source:
+        repoURL: <REPO_URL>
+        targetRevision: HEAD
+        path: kyverno-policies-chart
+        helm:
+          valueFiles:
+          - ../sites/{{path[1]}}/kyverno-policies.yaml       # site-level shared values
+          - ../{{path}}/kyverno-policies.yaml                # cluster-specific overrides
+      destination:
+        name: "{{path.basename}}"   # must match ArgoCD registered cluster name
+        namespace: kyverno
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true

@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kyverno-operator
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: <REPO_URL>        # e.g. https://github.com/matankriel/sks.git
+      revision: HEAD
+      directories:
+      - path: sites/*/*            # matches sites/<site>/<cluster>
+  template:
+    metadata:
+      name: "kyverno-operator-{{path[1]}}-{{path.basename}}"
+    spec:
+      project: default
+      source:
+        repoURL: <KYVERNO_OPERATOR_REPO_URL>   # replace with upstream Kyverno Helm repo
+        chart: kyverno                          # replace with actual chart name if different
+        targetRevision: <KYVERNO_CHART_VERSION> # e.g. "3.2.6"
+        helm:
+          valueFiles:
+          - $values/sites/{{path[1]}}/kyverno-operator.yaml       # site-level shared values
+          - $values/{{path}}/kyverno-operator.yaml                 # cluster-specific overrides
+      # $values source — points to this repo to resolve the valueFiles above
+      sources:
+      - repoURL: <REPO_URL>
+        targetRevision: HEAD
+        ref: values
+      - repoURL: <KYVERNO_OPERATOR_REPO_URL>
+        chart: kyverno
+        targetRevision: <KYVERNO_CHART_VERSION>
+        helm:
+          valueFiles:
+          - $values/sites/{{path[1]}}/kyverno-operator.yaml
+          - $values/{{path}}/kyverno-operator.yaml
+      destination:
+        name: "{{path.basename}}"   # must match ArgoCD registered cluster name
+        namespace: kyverno
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true

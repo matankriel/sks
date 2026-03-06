@@ -1,0 +1,5 @@
+# Site-level shared values for the Kyverno operator.
+# Override per-cluster in sites/<site>/<cluster>/kyverno-operator.yaml.
+
+# placeholder — replace with actual site-wide operator settings
+replicaCount: 1   # default replicas for all clusters in this site

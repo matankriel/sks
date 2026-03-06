@@ -1,0 +1,5 @@
+# Cluster-specific overrides for the Kyverno operator.
+# Site-level defaults are inherited from sites/site-a/kyverno-operator.yaml.
+
+# placeholder — override operator settings specific to this cluster, e.g.:
+# replicaCount: 3

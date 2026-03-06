@@ -1,0 +1,4 @@
+# Site-level shared values for kyverno-policies.
+# Override per-cluster in sites/<site>/<cluster>/kyverno-policies.yaml.
+policies:
+  excludeNamespaces: {}   # placeholder — override to add site-wide namespace exclusions

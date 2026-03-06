@@ -1,0 +1,7 @@
+# Cluster-specific overrides for kyverno-policies.
+# Site-level defaults are inherited from sites/site-a/kyverno-policies.yaml.
+
+# placeholder — override individual policy settings for this cluster, e.g.:
+# policies:
+#   minimumReplicas:
+#     minReplicas: 2
