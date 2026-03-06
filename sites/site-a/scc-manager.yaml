@@ -1,0 +1,3 @@
+# Site-level shared values for scc-manager.
+# Add any SCC defaults shared by every cluster in this site.
+sccs: []

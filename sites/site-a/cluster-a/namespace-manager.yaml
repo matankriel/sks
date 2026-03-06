@@ -1,0 +1,18 @@
+# Cluster-specific values — site-level defaults (LDAP URL, bindDN, etc.)
+# are inherited from sites/site-a/namespace-manager.yaml.
+namespace:
+  name: my-app
+  labels:
+    env: production
+
+ldap:
+  groupName: my-app-team   # the LDAP group to sync into this namespace
+
+permissions:
+  namespaceAdmin: false
+
+resources:
+  cpu: "4"
+  memory: "8Gi"
+  pods: "20"
+  services: "10"

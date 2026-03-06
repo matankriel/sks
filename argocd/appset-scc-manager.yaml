@@ -9,10 +9,10 @@ spec:
       repoURL: <REPO_URL>        # e.g. https://github.com/org/sks.git
       revision: HEAD
       directories:
-      - path: clusters/*
+      - path: sites/*/*            # matches sites/<site>/<cluster>
   template:
     metadata:
-      name: "scc-manager-{{path.basename}}"
+      name: "scc-manager-{{path[1]}}-{{path.basename}}"
     spec:
       project: default
       source:
@@ -21,7 +21,8 @@ spec:
         path: scc-manager
         helm:
           valueFiles:
-          - ../../clusters/{{path.basename}}/scc-manager.yaml
+          - ../sites/{{path[1]}}/scc-manager.yaml             # site-level shared values
+          - ../{{path}}/scc-manager.yaml                      # cluster-specific overrides
       destination:
         name: "{{path.basename}}"   # must match ArgoCD registered cluster name
         namespace: argocd           # ArgoCD app lives here; chart deploys to its own ns

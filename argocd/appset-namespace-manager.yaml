@@ -9,19 +9,20 @@ spec:
       repoURL: <REPO_URL>        # e.g. https://github.com/org/sks.git
       revision: HEAD
       directories:
-      - path: clusters/*
+      - path: sites/*/*            # matches sites/<site>/<cluster>
   template:
     metadata:
-      name: "namespace-manager-{{path.basename}}"
+      name: "namespace-manager-{{path[1]}}-{{path.basename}}"
     spec:
       project: default
       source:
         repoURL: <REPO_URL>
         targetRevision: HEAD
-        path: helm-chart
+        path: namespace-chart
         helm:
           valueFiles:
-          - ../../clusters/{{path.basename}}/namespace-manager.yaml
+          - ../sites/{{path[1]}}/namespace-manager.yaml       # site-level shared values
+          - ../{{path}}/namespace-manager.yaml                # cluster-specific overrides
       destination:
         name: "{{path.basename}}"   # must match ArgoCD registered cluster name
         namespace: argocd           # ArgoCD app lives here; chart deploys to its own ns
