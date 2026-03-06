@@ -1,0 +1,12 @@
+{{- range .Values.sccs }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "scc.clusterRoleName" (dict "Release" $.Release "sccName" .name) }}
+rules:
+- apiGroups: ["security.openshift.io"]
+  resources: ["securitycontextconstraints"]
+  resourceNames: [{{ .name | quote }}]
+  verbs: ["use"]
+{{- end }}

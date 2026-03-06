@@ -1,0 +1,33 @@
+namespace:
+  name: ""                      # Required: name of the namespace to create
+  labels: {}                    # Optional extra labels
+  annotations: {}               # Optional extra annotations
+
+ldap:
+  groupName: ""                 # Required: LDAP group name (CN)
+  url: ""                       # Required: e.g. ldap://ldap.example.com:389
+  bindDN: ""                    # Required: bind service account DN
+  bindPassword: ""              # Required: bind password (stored in a Secret)
+  # Optional: reference an existing Secret instead of creating one
+  existingBindPasswordSecret:
+    name: ""
+    key: ""
+  groupsBaseDN: ""              # Required: OU where groups live
+  usersBaseDN: ""               # Required: OU where users live
+  groupMemberAttribute: "member"
+  userNameAttribute: "uid"
+  insecure: false               # Set true to skip TLS verification
+
+permissions:
+  namespaceAdmin: false         # false = view role; true = admin role on the namespace
+
+resources:
+  cpu: "4"
+  memory: "8Gi"
+  pods: "20"
+  services: "10"
+
+ldapSync:
+  image: "quay.io/openshift/origin-cli:latest"  # Image with oc CLI
+  schedule: "0 * * * *"        # Every hour
+  serviceAccountName: "ldap-sync-sa"

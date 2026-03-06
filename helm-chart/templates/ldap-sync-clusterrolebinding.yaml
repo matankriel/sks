@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ printf "%s-ldap-sync" (include "chart.fullname" .) }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ printf "%s-ldap-sync" (include "chart.fullname" .) }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.ldapSync.serviceAccountName }}
+    namespace: {{ .Values.namespace.name }}

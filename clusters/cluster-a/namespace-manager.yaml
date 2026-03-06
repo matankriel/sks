@@ -1,0 +1,21 @@
+namespace:
+  name: my-app
+  labels:
+    env: production
+
+ldap:
+  groupName: my-app-team
+  url: ldap://ldap.example.com:389
+  bindDN: "cn=service,dc=example,dc=com"
+  bindPassword: ""           # inject via Sealed Secret / ESO in real use
+  groupsBaseDN: "ou=groups,dc=example,dc=com"
+  usersBaseDN: "ou=users,dc=example,dc=com"
+
+permissions:
+  namespaceAdmin: false
+
+resources:
+  cpu: "4"
+  memory: "8Gi"
+  pods: "20"
+  services: "10"

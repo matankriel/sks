@@ -1,0 +1,7 @@
+apiVersion: user.openshift.io/v1
+kind: Group
+metadata:
+  name: {{ required "ldap.groupName is required" .Values.ldap.groupName }}
+  annotations:
+    openshift.io/ldap.uid: {{ printf "cn=%s,%s" .Values.ldap.groupName .Values.ldap.groupsBaseDN }}
+users: []

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ printf "%s-quota" .Values.namespace.name }}
+  namespace: {{ .Values.namespace.name }}
+spec:
+  hard:
+    requests.cpu: {{ .Values.resources.cpu | quote }}
+    requests.memory: {{ .Values.resources.memory | quote }}
+    count/pods: {{ .Values.resources.pods | quote }}
+    count/services: {{ .Values.resources.services | quote }}

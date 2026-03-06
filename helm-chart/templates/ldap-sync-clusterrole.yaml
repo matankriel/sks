@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ printf "%s-ldap-sync" (include "chart.fullname" .) }}
+rules:
+  - apiGroups: ["user.openshift.io"]
+    resources: ["groups"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: ["user.openshift.io"]
+    resources: ["identities"]
+    verbs: ["get", "list"]
+  - apiGroups: ["user.openshift.io"]
+    resources: ["useridentitymappings"]
+    verbs: ["get", "create", "delete"]

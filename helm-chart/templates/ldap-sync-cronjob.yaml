@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ printf "%s-ldap-sync" .Release.Name }}
+  namespace: {{ .Values.namespace.name }}
+spec:
+  schedule: {{ .Values.ldapSync.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ .Values.ldapSync.serviceAccountName }}
+          restartPolicy: OnFailure
+          containers:
+            - name: ldap-sync
+              image: {{ .Values.ldapSync.image }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  oc adm groups sync \
+                    --sync-config=/etc/ldap-sync/sync.yaml \
+                    --whitelist=/etc/ldap-sync/whitelist.txt \
+                    --confirm
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "100m"
+                  memory: "128Mi"
+              volumeMounts:
+                - name: ldap-sync-config
+                  mountPath: /etc/ldap-sync
+                  readOnly: true
+                - name: ldap-bind-password
+                  mountPath: /etc/ldap-bind/password
+                  subPath: {{ include "ldapBindPasswordSecretKey" . }}
+                  readOnly: true
+          volumes:
+            - name: ldap-sync-config
+              configMap:
+                name: {{ printf "%s-ldap-sync-config" .Release.Name }}
+            - name: ldap-bind-password
+              secret:
+                secretName: {{ include "ldapBindPasswordSecretName" . }}

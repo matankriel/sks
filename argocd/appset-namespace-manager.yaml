@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: namespace-manager
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: <REPO_URL>        # e.g. https://github.com/org/sks.git
+      revision: HEAD
+      directories:
+      - path: clusters/*
+  template:
+    metadata:
+      name: "namespace-manager-{{path.basename}}"
+    spec:
+      project: default
+      source:
+        repoURL: <REPO_URL>
+        targetRevision: HEAD
+        path: helm-chart
+        helm:
+          valueFiles:
+          - ../../clusters/{{path.basename}}/namespace-manager.yaml
+      destination:
+        name: "{{path.basename}}"   # must match ArgoCD registered cluster name
+        namespace: argocd           # ArgoCD app lives here; chart deploys to its own ns
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
