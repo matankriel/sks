@@ -1,0 +1,12 @@
+apiVersion: v2
+name: kyverno-policies
+description: Kyverno ClusterPolicies for OpenShift cluster governance
+version: 1.0.0
+appVersion: "1.0.0"
+type: application
+keywords:
+  - kyverno
+  - policy
+  - openshift
+  - security
+  - governance

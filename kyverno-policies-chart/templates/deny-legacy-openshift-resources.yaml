@@ -1,0 +1,98 @@
+{{- if .Values.policies.denyLegacyOpenshiftResources.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-legacy-openshift-resources
+  annotations:
+    policies.kyverno.io/title: Deny Legacy OpenShift Resources
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Blocks creation of deprecated OpenShift resources: BuildConfig,
+      Build, and DeploymentConfig. Use Deployments (apps/v1) and
+      ArgoCD with external pipelines instead.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: deny-buildconfigs
+      match:
+        any:
+          - resources:
+              kinds:
+                - BuildConfig
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.metadata.annotations.\"not.suppurted.pod.resource\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: "BuildConfig resources are deprecated. Use ArgoCD and external pipelines instead."
+        deny: {}
+    - name: deny-builds
+      match:
+        any:
+          - resources:
+              kinds:
+                - Build
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.metadata.annotations.\"not.suppurted.pod.resource\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: "Build resources are deprecated. Use ArgoCD and external pipelines instead."
+        deny: {}
+    - name: deny-deploymentconfigs
+      match:
+        any:
+          - resources:
+              kinds:
+                - DeploymentConfig
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.metadata.annotations.\"not.suppurted.pod.resource\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: "DeploymentConfig resources are deprecated. Use Deployment (apps/v1) instead."
+        deny: {}
+{{- end }}

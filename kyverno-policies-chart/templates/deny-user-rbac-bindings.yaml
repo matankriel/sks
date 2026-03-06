@@ -1,0 +1,75 @@
+{{- if .Values.policies.denyUserRbacBindings.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-user-rbac-bindings
+  annotations:
+    policies.kyverno.io/title: Deny User RBAC Bindings
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Blocks RoleBindings and ClusterRoleBindings that grant permissions
+      directly to users. Permissions must be granted to Groups only.
+      ServiceAccount subjects are still permitted.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: deny-user-rolebindings
+      match:
+        any:
+          - resources:
+              kinds:
+                - RoleBinding
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.metadata.annotations.\"not.suppurted.rbac.user\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: "Direct User bindings are not allowed in RoleBindings. Grant permissions to Groups instead."
+        foreach:
+          - list: "request.object.subjects"
+            deny:
+              conditions:
+                any:
+                  - key: "{{`{{ element.kind }}`}}"
+                    operator: Equals
+                    value: "User"
+    - name: deny-user-clusterrolebindings
+      match:
+        any:
+          - resources:
+              kinds:
+                - ClusterRoleBinding
+              operations:
+                - CREATE
+                - UPDATE
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.metadata.annotations.\"not.suppurted.rbac.user\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: "Direct User bindings are not allowed in ClusterRoleBindings. Grant permissions to Groups instead."
+        foreach:
+          - list: "request.object.subjects"
+            deny:
+              conditions:
+                any:
+                  - key: "{{`{{ element.kind }}`}}"
+                    operator: Equals
+                    value: "User"
+{{- end }}

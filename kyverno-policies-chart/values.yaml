@@ -1,0 +1,54 @@
+# Global policy settings
+policies:
+  # Namespace exclusion lists (shared across all policies)
+  excludeNamespaces:
+    exact:
+      - gitops
+      - argocd
+      - keda
+      - assisted-installer
+    wildcards:
+      - "openshift*"
+      - "open-cluster*"
+      - "nfspvc*"
+      - "cert*"
+      - "kube*"
+      - "*operator*"
+      - "*provider*"
+      - "*system*"
+      - "*ocp4*"
+
+  # Individual policy toggles
+  minimumReplicas:
+    enabled: true
+    minReplicas: 3
+
+  denyPodAffinityAndNodeSelector:
+    enabled: true
+
+  denyLegacyOpenshiftResources:
+    enabled: false
+
+  denyInternalRegistry:
+    enabled: false
+
+  limitGracePeriod:
+    enabled: true
+    maxGracePeriodSeconds: 300
+
+  denyUserRbacBindings:
+    enabled: true
+
+  enforceNetworkBandwidth:
+    enabled: true
+    ingressBandwidth: "1G"
+    egressBandwidth: "1G"
+
+  generateLimitRange:
+    enabled: true
+    maxCpuCores: "30"
+    maxMemory: "192Gi"
+
+  generateNetworkPolicy:
+    enabled: true
+    nfsSubnet: "0.0.0.0/0"  # Replace with your storage VLAN/subnet CIDR

@@ -1,0 +1,51 @@
+{{- if .Values.policies.limitGracePeriod.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: limit-grace-period
+  annotations:
+    policies.kyverno.io/title: Limit Termination Grace Period
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Limits terminationGracePeriodSeconds to a maximum of
+      {{ .Values.policies.limitGracePeriod.maxGracePeriodSeconds }}s on Deployments.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: limit-grace-period
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.spec.template.metadata.annotations.\"not.suppurted.pod.graceperiod\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: >-
+          terminationGracePeriodSeconds is set to
+          {{`{{ request.object.spec.template.spec.terminationGracePeriodSeconds }}`}}s.
+          Maximum allowed is {{ .Values.policies.limitGracePeriod.maxGracePeriodSeconds }}s.
+        deny:
+          conditions:
+            any:
+              - key: "{{`{{ request.object.spec.template.spec.terminationGracePeriodSeconds || '30' }}`}}"
+                operator: GreaterThan
+                value: {{ .Values.policies.limitGracePeriod.maxGracePeriodSeconds }}
+{{- end }}

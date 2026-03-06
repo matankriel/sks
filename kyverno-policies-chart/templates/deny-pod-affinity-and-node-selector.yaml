@@ -1,0 +1,122 @@
+{{- if .Values.policies.denyPodAffinityAndNodeSelector.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-pod-affinity-and-node-selector
+  annotations:
+    policies.kyverno.io/title: Deny Pod Affinity and Node Selector
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Blocks developers from setting podAffinity, podAntiAffinity, and
+      nodeSelector on Deployments. Pod scheduling is managed by the
+      cluster scheduler's topology spread constraints.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: deny-pod-affinity
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.spec.template.metadata.annotations.\"not.suppurted.pod.ha.sla\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+          - key: "{{`{{ request.object.spec.template.metadata.labels.\"policy.skip\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: "podAffinity is not allowed. Pod scheduling is managed by the cluster scheduler's topology spread constraints."
+        deny:
+          conditions:
+            any:
+              - key: "{{`{{ request.object.spec.template.spec.affinity.podAffinity || '' }}`}}"
+                operator: NotEquals
+                value: ""
+    - name: deny-pod-anti-affinity
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.spec.template.metadata.annotations.\"not.suppurted.pod.ha.sla\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+          - key: "{{`{{ request.object.spec.template.metadata.labels.\"policy.skip\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: "podAntiAffinity is not allowed. Pod spreading is managed by the cluster scheduler's topology spread constraints."
+        deny:
+          conditions:
+            any:
+              - key: "{{`{{ request.object.spec.template.spec.affinity.podAntiAffinity || '' }}`}}"
+                operator: NotEquals
+                value: ""
+    - name: deny-node-selector
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          - key: "{{`{{ request.object.spec.template.metadata.annotations.\"not.suppurted.pod.ha.sla\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+          - key: "{{`{{ request.object.spec.template.metadata.labels.\"policy.skip\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: "nodeSelector is not allowed. Node placement is managed by the cluster scheduler."
+        deny:
+          conditions:
+            any:
+              - key: "{{`{{ request.object.spec.template.spec.nodeSelector || '' }}`}}"
+                operator: NotEquals
+                value: ""
+{{- end }}

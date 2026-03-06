@@ -1,0 +1,50 @@
+{{- if .Values.policies.generateLimitRange.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: generate-limit-range
+  annotations:
+    policies.kyverno.io/title: Generate LimitRange for New Namespaces
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Automatically creates a LimitRange in every new namespace that
+      enforces memory request=limit (ratio 1:1) and CPU request:limit
+      max ratio 1:2.
+spec:
+  background: false
+  rules:
+    - name: generate-limit-range
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+              operations:
+                - CREATE
+      exclude:
+        any:
+          - resources:
+              names:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      generate:
+        apiVersion: v1
+        kind: LimitRange
+        name: default-limit-range
+        namespace: "{{`{{ request.object.metadata.name }}`}}"
+        synchronize: true
+        data:
+          spec:
+            limits:
+              - type: Container
+                max:
+                  cpu: {{ .Values.policies.generateLimitRange.maxCpuCores | quote }}
+                  memory: {{ .Values.policies.generateLimitRange.maxMemory | quote }}
+                maxLimitRequestRatio:
+                  memory: "1"
+                  cpu: "2"
+{{- end }}

@@ -1,0 +1,48 @@
+{{- if .Values.policies.enforceNetworkBandwidth.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: enforce-network-bandwidth
+  annotations:
+    policies.kyverno.io/title: Enforce Network Bandwidth Limits
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Mutates Pods to enforce network bandwidth limits by adding
+      ingress and egress bandwidth annotations.
+spec:
+  background: false
+  rules:
+    - name: enforce-bandwidth-annotations
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        any:
+          - key: "{{`{{ request.object.metadata.annotations.\"kubernetes.io/ingress-bandwidth\" || '' }}`}}"
+            operator: NotEquals
+            value: {{ .Values.policies.enforceNetworkBandwidth.ingressBandwidth | quote }}
+          - key: "{{`{{ request.object.metadata.annotations.\"kubernetes.io/egress-bandwidth\" || '' }}`}}"
+            operator: NotEquals
+            value: {{ .Values.policies.enforceNetworkBandwidth.egressBandwidth | quote }}
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            annotations:
+              kubernetes.io/ingress-bandwidth: {{ .Values.policies.enforceNetworkBandwidth.ingressBandwidth | quote }}
+              kubernetes.io/egress-bandwidth: {{ .Values.policies.enforceNetworkBandwidth.egressBandwidth | quote }}
+{{- end }}

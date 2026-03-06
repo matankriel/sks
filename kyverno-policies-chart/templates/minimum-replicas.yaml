@@ -1,0 +1,60 @@
+{{- if .Values.policies.minimumReplicas.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: minimum-replicas
+  annotations:
+    policies.kyverno.io/title: Minimum Replicas
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Enforces a minimum of {{ .Values.policies.minimumReplicas.minReplicas }} replicas on all
+      Deployments to ensure high availability.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: minimum-replicas
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              operations:
+                - CREATE
+                - UPDATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      preconditions:
+        all:
+          # Skip if pod template has the SLA opt-out annotation
+          - key: "{{`{{ request.object.spec.template.metadata.annotations.\"not.suppurted.pod.ha.sla\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+          # Skip if pod template has the policy.skip label
+          - key: "{{`{{ request.object.spec.template.metadata.labels.\"policy.skip\" || '' }}`}}"
+            operator: NotEquals
+            value: "true"
+      validate:
+        message: >-
+          Deployment {{`{{ request.object.metadata.name }}`}} does not meet
+          the minimum replica count of {{ .Values.policies.minimumReplicas.minReplicas }}.
+        deny:
+          conditions:
+            any:
+              # Deny if replicas is not set (null/omitted defaults to 1 in K8s)
+              - key: "{{`{{ request.object.spec.replicas || '' }}`}}"
+                operator: Equals
+                value: ""
+              # Deny if replicas is below minimum
+              - key: "{{`{{ request.object.spec.replicas || '' }}`}}"
+                operator: LessThan
+                value: {{ .Values.policies.minimumReplicas.minReplicas }}
+{{- end }}
