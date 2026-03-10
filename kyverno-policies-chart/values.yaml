@@ -52,3 +52,15 @@ policies:
   generateNetworkPolicy:
     enabled: true
     nfsSubnet: "0.0.0.0/0"  # Replace with your storage VLAN/subnet CIDR
+
+  routeDnsManagement:
+    enabled: false
+    clusterName: ""      # cluster DNS segment, e.g. cluster-a  — set per cluster
+    siteName: ""         # site DNS segment,    e.g. site-a    — set per site
+    baseDomain: ""       # base domain,         e.g. example.com — set per site
+    cname:
+      # Update these to match your Crossplane DNS provider CRD
+      apiVersion: "dns.crossplane.io/v1alpha1"   # placeholder
+      kind: "Record"                              # placeholder
+      namespace: "crossplane-system"
+      ttl: 300

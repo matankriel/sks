@@ -1,0 +1,79 @@
+{{- if .Values.policies.routeDnsManagement.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: route-dns-management
+  annotations:
+    policies.kyverno.io/title: Route DNS Management
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      On Route creation, rewrites spec.host to the site-stable pattern
+      (<name>-<namespace>.apps.<site>.<baseDomain>) so the route is not
+      bound to a specific cluster. Also generates a Crossplane CNAME record
+      pointing the stable site hostname to the current cluster's hostname,
+      enabling workload mobility between clusters in the same site.
+spec:
+  background: false
+  rules:
+
+    # ── Rule 1: Rewrite the route hostname to the site-stable pattern ──────────
+    - name: mutate-route-host
+      match:
+        any:
+          - resources:
+              kinds:
+                - route.openshift.io/v1/Route
+              operations:
+                - CREATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      mutate:
+        patchStrategicMerge:
+          spec:
+            # Result: <name>-<namespace>.apps.<siteName>.<baseDomain>
+            host: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}.apps.{{ .Values.policies.routeDnsManagement.siteName }}.{{ .Values.policies.routeDnsManagement.baseDomain }}"
+
+    # ── Rule 2: Generate a Crossplane CNAME record ─────────────────────────────
+    #   CNAME: <name>-<namespace>.apps.<site>.<domain>
+    #     → <name>-<namespace>.apps.<cluster>.<domain>
+    - name: generate-cname-record
+      match:
+        any:
+          - resources:
+              kinds:
+                - route.openshift.io/v1/Route
+              operations:
+                - CREATE
+      exclude:
+        any:
+          - resources:
+              namespaces:
+              {{- range .Values.policies.excludeNamespaces.exact }}
+                - {{ . | quote }}
+              {{- end }}
+              {{- range .Values.policies.excludeNamespaces.wildcards }}
+                - {{ . | quote }}
+              {{- end }}
+      generate:
+        apiVersion: {{ .Values.policies.routeDnsManagement.cname.apiVersion }}
+        kind: {{ .Values.policies.routeDnsManagement.cname.kind }}
+        name: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}"
+        namespace: {{ .Values.policies.routeDnsManagement.cname.namespace }}
+        synchronize: true
+        data:
+          spec:
+            forProvider:
+              # Stable site-level hostname (CNAME source)
+              name: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}.apps.{{ .Values.policies.routeDnsManagement.siteName }}.{{ .Values.policies.routeDnsManagement.baseDomain }}"
+              # Current cluster hostname (CNAME target)
+              target: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}.apps.{{ .Values.policies.routeDnsManagement.clusterName }}.{{ .Values.policies.routeDnsManagement.baseDomain }}"
+              ttl: {{ .Values.policies.routeDnsManagement.cname.ttl }}
+{{- end }}
