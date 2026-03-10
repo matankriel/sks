@@ -8,7 +8,5 @@ policies:
     siteName: "site-a"
     baseDomain: "example.com"   # placeholder — replace with real base domain
     cname:
-      apiVersion: "dns.crossplane.io/v1alpha1"   # placeholder — update to your Crossplane DNS provider CRD
-      kind: "Record"                              # placeholder — update to your Crossplane DNS provider CRD kind
-      namespace: "crossplane-system"
       ttl: 300
+      providerConfigRef: "dns-default"   # placeholder — set per-site if different

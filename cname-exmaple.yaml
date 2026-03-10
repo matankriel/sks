@@ -1,0 +1,18 @@
+apiVersion: record.dns-v2.crossplane.io/v1alpha1
+kind: CNAMERecord
+metadata:
+  name: example-cname-record
+  namespace: example-namespace
+  annotations:
+    Crossplane.io/external-name: example-cname-record
+spec:
+  deletionPolicy: Delete
+  forProvider:
+    name: example-name
+    cname: example-cname.example.com
+    ttl: 300
+    zone: <baseDomain>
+  managementPolicies:
+    - '*'
+  providerConfigRef:
+    name: dns-default

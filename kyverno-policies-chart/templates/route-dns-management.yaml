@@ -63,17 +63,26 @@ spec:
                 - {{ . | quote }}
               {{- end }}
       generate:
-        apiVersion: {{ .Values.policies.routeDnsManagement.cname.apiVersion }}
-        kind: {{ .Values.policies.routeDnsManagement.cname.kind }}
+        apiVersion: record.dns-v2.crossplane.io/v1alpha1
+        kind: CNAMERecord
         name: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}"
-        namespace: {{ .Values.policies.routeDnsManagement.cname.namespace }}
+        namespace: "{{`{{ request.object.metadata.namespace }}`}}"
         synchronize: true
         data:
+          metadata:
+            annotations:
+              crossplane.io/external-name: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}"
           spec:
+            deletionPolicy: Delete
             forProvider:
-              # Stable site-level hostname (CNAME source)
-              name: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}.apps.{{ .Values.policies.routeDnsManagement.siteName }}.{{ .Values.policies.routeDnsManagement.baseDomain }}"
-              # Current cluster hostname (CNAME target)
-              target: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}.apps.{{ .Values.policies.routeDnsManagement.clusterName }}.{{ .Values.policies.routeDnsManagement.baseDomain }}"
+              # Relative subdomain — Crossplane appends zone to form full FQDN
+              name: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}.apps.{{ .Values.policies.routeDnsManagement.siteName }}"
+              # Current cluster hostname (CNAME target) — full FQDN
+              cname: "{{`{{ join('', [request.object.metadata.name, '-', request.object.metadata.namespace]) }}`}}.apps.{{ .Values.policies.routeDnsManagement.clusterName }}.{{ .Values.policies.routeDnsManagement.baseDomain }}"
               ttl: {{ .Values.policies.routeDnsManagement.cname.ttl }}
+              zone: {{ .Values.policies.routeDnsManagement.baseDomain }}
+            managementPolicies:
+              - '*'
+            providerConfigRef:
+              name: {{ .Values.policies.routeDnsManagement.cname.providerConfigRef }}
 {{- end }}
